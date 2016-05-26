@@ -1,5 +1,12 @@
 """Library for read-write functions with the filesystem."""
 import os
+import numpy as np
+import unittest
+import json
+
+import lib
+from lib.taxonomy.loading import gatherPathsAndLabels, rootNodeClasses, getEntries, imageExists
+from lib.taxonomy.loading import TRAINING_SET, TESTING_SET, NO_SET, VALIDATION_SET
 
 
 def make_directory_structure(dir_name, subfolders):
@@ -55,3 +62,82 @@ def create_symlinks(symlinks):
         src = entry.split()[0]
         dst = entry.split()[1]
         os.symlink(src, dst)
+
+
+def print_partition_statistics(meta, classes, dataset_directory):
+    """Print out statistics on the dataset."""
+
+    trainset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TRAINING_SET))
+    valset = np.unique(gatherPathsAndLabels(meta, dataset_directory, VALIDATION_SET))
+    testset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TESTING_SET))
+
+    # Lets check that there is no overlap between train and test paths
+    trainpaths = np.unique([os.path.basename(t.split()[0]) for t in trainset])
+    valpaths = np.unique([os.path.basename(t.split()[0]) for t in valset])
+    testpaths = np.unique([os.path.basename(t.split()[0]) for t in testset])
+
+    intersection = np.intersect1d(trainpaths, testpaths)
+    print 'Train and test share %d images, according to filenames' % len(intersection)
+    intersection = np.intersect1d(trainpaths, valpaths)
+    print 'Train and val share %d images, according to filenames' % len(intersection)
+    intersection = np.intersect1d(testpaths, valpaths)
+    print 'Test and val share %d images, according to filenames' % len(intersection)
+
+    getClassFromValidationSet = lambda meta, c: [m for m in meta if m['set_identifier'] == VALIDATION_SET and m['clinical_label'] == c]
+    getClassFromTrainingSet = lambda meta, c: [m for m in meta if m['set_identifier'] == TRAINING_SET and m['clinical_label'] == c]
+    getClassFromTestingSet = lambda meta, c: [m for m in meta if m['set_identifier'] == TESTING_SET and m['clinical_label'] == c]
+    print 'Dataset sizes (Based on Metadata):'
+    print 'Train,\tVal,\tTest,\tTotal'
+    for c in classes:
+        v = len(getClassFromValidationSet(meta, c))
+        t = len(getClassFromTrainingSet(meta, c))
+        te = len(getClassFromTestingSet(meta, c))
+        print t, '\t', v, '\t', te, '\t', v + t + te
+
+    print ''
+    print len(getEntries(meta, 'set_identifier', TRAINING_SET)),
+    print len(getEntries(meta, 'set_identifier', VALIDATION_SET)),
+    print len(getEntries(meta, 'set_identifier', TESTING_SET))
+    print ''
+
+    print 'Dataset sizes (Based on unique images):'
+    print 'Train,\tVal,\tTest,\tTotal'
+    for c in classes:
+        v = len(np.unique([m['filename'] for m in getClassFromValidationSet(meta, c)]))
+        t = len(np.unique([m['filename'] for m in getClassFromTrainingSet(meta, c)]))
+        te = len(np.unique([m['filename'] for m in getClassFromTestingSet(meta, c)]))
+        print t, '\t', v, '\t', te, '\t', v + t + te
+
+    print '# Unique Images in Training:', len(trainset)
+    print '# Unique Images in Validation:', len(valset)
+    print '# Unique Images in Testing:', len(testset)
+    print ''
+
+class TestMethods(unittest.TestCase):
+
+    def test_print_partition_statistics(self):
+        meta = json.load(open('/archive/esteva/skindata4/meta_lite.json'))
+        classes = range(9)
+        for m in meta:
+            c = np.random.choice(classes)
+            m['clinical_label'] = c
+            m['label'] = c
+        dataset_directory = '/archive/esteva/skindata4/images'
+        meta = [m for m in meta if imageExists(m, dataset_directory)]
+        l = len(meta)
+        for i,m in enumerate(meta):
+            if i < l / 3:
+                m['set_identifier'] = TRAINING_SET
+                continue
+            if i < 2 * l / 3:
+                m['set_identifier'] = VALIDATION_SET
+                continue
+            m['set_identifier'] = TESTING_SET
+        print_partition_statistics(meta, classes, dataset_directory)
+
+if __name__ == '__main__':
+    # Run unit test
+    unittest.main()
+
+
+

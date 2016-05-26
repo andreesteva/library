@@ -62,21 +62,26 @@ def main():
         return
 
     # We load in images that exist on our filesystem,
-    # Fix the naming convention issues of the top 9 categories, and
-    # Rename 'label' field to 'disease_name'
     meta = json.load(open(meta_file))
     meta = [m for m in meta if imageExists(m, dataset_directory)]
-    meta_exists = meta
-    meta = [m for m in meta if 'tax_path_score' in m.keys() and m['tax_path_score'] >= tax_path_score]
-    meta = [m for m in meta if m['tax_path']]
-    meta = [m for m in meta if 'skin_prob' in m.keys() and m['skin_prob'] >= skin_prob]
 
+    # Connected components partition assigns one of TRAINING_SET or TESTING_SET to field 'set_identifier'
+    partition_connected_components(meta)
+
+    # Keep meta with desired skin probs and tax path scores
+    meta = [m for m in meta if 'tax_path_score' in m and m['tax_path_score'] >= tax_path_score]
+    meta = [m for m in meta if m['tax_path']]
+    meta = [m for m in meta if 'skin_prob' in m and m['skin_prob'] >= skin_prob]
+    meta = [m for m in meta if m['set_identifier'] in [TRAINING_SET, TESTING_SET]]
+
+    # Fix the naming convention issues of the top 9 categories (to dermal-tumor-benign, etc.)
     syns = SynonymsList()
     for m in meta:
         rootname = '-'.join(m['tax_path'][0])
         rootrename = syns.synonymOf(rootname).split('-')
         m['tax_path'][0] = rootrename
 
+    # Rename 'label' field to 'disease_name'. 'label' will be used for integer labels.
     for m in meta:
         if 'label' in m:
             m['disease_name'] = m['label']
@@ -84,39 +89,17 @@ def main():
 
     print "Kept Meta Entries: %d" % len(meta)
 
-
-    # These are the classes we will use
+    # Assign nine-way rootnode classes.
     classes, labels = rootNodeClasses(meta)
     setEntries(meta, 'label', labels)
     setEntries(meta, 'clinical_label', labels)
     for k,v in classes.iteritems():
         print k,v
 
-    partition_connected_components(meta_exists)
-
-    # Assign NO_SET to meta entries that dont make the threshold, and reduce meta to just those that do.
-    meta = meta_exists
-    print 'Eliminating images with skin_prob < %0.2f and tax_path_score < %0.2f' % (skin_prob, tax_path_score)
-    pruned = 0
-    for m in meta:
-        if 'skin_prob' not in m or 'tax_path_score' not in m or 'tax_path' not in m:
-            m['set_identifier'] = NO_SET
-            pruned += 1
-            continue
-        if m['skin_prob'] < skin_prob or m['tax_path_score'] < tax_path_score:
-            m['set_identifier'] = NO_SET
-            pruned += 1
-
-    meta = [m for m in meta if m['set_identifier'] in [TRAINING_SET, TESTING_SET]]
-    classes, labels = rootNodeClasses(meta)
-    setEntries(meta, 'label', labels)
-    setEntries(meta, 'clinical_label', labels)
-
     meta_train = getEntries(meta, 'set_identifier', TRAINING_SET)
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
     synset = gatherSynset(meta_train)
 
-    print 'Pruning out %d / %d meta entries to NO_SET and assigning labels and clinical labels' % (pruned, len(meta_exists))
     print 'Size of meta_train %d' % len(meta_train)
     print 'Size of meta_test %d' % len(meta_test)
 
@@ -141,55 +124,13 @@ def main():
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
     print len(meta_test)
 
-    # Print out statistics on the dataset
-    print 'Generating Training, Validation, and Testing sets.'
-    trainset = gatherPathsAndLabels(meta, dataset_directory, TRAINING_SET)
-    valset = gatherPathsAndLabels(meta, dataset_directory, VALIDATION_SET)
-    testset = gatherPathsAndLabels(meta, dataset_directory, TESTING_SET)
-    no_set = gatherPathsAndLabels(meta, dataset_directory, NO_SET)
+    print 'Gathering paths and labels from the metadata'
+    trainset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TRAINING_SET))
+    valset = np.unique(gatherPathsAndLabels(meta, dataset_directory, VALIDATION_SET))
+    testset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TESTING_SET))
+    no_set = np.unique(gatherPathsAndLabels(meta, dataset_directory, NO_SET))
 
-    # Since some images have multiple diseases, we keep only the unique 'path [label]' entries
-    trainset = np.unique(trainset)
-    valset = np.unique(valset)
-    testset = np.unique(testset)
-    noset = np.unique(no_set)
-
-    # Lets check that there is no overlap between train and test paths
-    trainpaths = np.unique([os.path.basename(t.split()[0]) for t in trainset])
-    testpaths = np.unique([os.path.basename(t.split()[0]) for t in testset])
-    intersection = np.intersect1d(trainpaths, testpaths)
-    print 'Train and test share %d images, according to filenames' % len(intersection)
-
-    getClassFromValidationSet = lambda meta, c: [m for m in meta if m['set_identifier'] == VALIDATION_SET and m['clinical_label'] == c]
-    getClassFromTrainingSet = lambda meta, c: [m for m in meta if m['set_identifier'] == TRAINING_SET and m['clinical_label'] == c]
-    getClassFromTestingSet = lambda meta, c: [m for m in meta if m['set_identifier'] == TESTING_SET and m['clinical_label'] == c]
-    print 'Dataset sizes (Based on Metadata):'
-    print 'Train,\tVal,\tTest,\tTotal'
-    for c in classes:
-        v = len(getClassFromValidationSet(meta, c))
-        t = len(getClassFromTrainingSet(meta, c))
-        te = len(getClassFromTestingSet(meta, c))
-        print t, '\t', v, '\t', te, '\t', v + t + te
-
-    print ''
-    print len(getEntries(meta, 'set_identifier', TRAINING_SET)),
-    print len(getEntries(meta, 'set_identifier', VALIDATION_SET)),
-    print len(getEntries(meta, 'set_identifier', TESTING_SET))
-    print ''
-
-    print 'Dataset sizes (Based on unique images):'
-    print 'Train,\tVal,\tTest,\tTotal'
-    for c in classes:
-        v = len(np.unique([m['filename'] for m in getClassFromValidationSet(meta, c)]))
-        t = len(np.unique([m['filename'] for m in getClassFromTrainingSet(meta, c)]))
-        te = len(np.unique([m['filename'] for m in getClassFromTestingSet(meta, c)]))
-        print t, '\t', v, '\t', te, '\t', v + t + te
-
-    print '# Unique Images in Training:', len(trainset)
-    print '# Unique Images in Validation:', len(valset)
-    print '# Unique Images in Testing:', len(testset)
-    print '# Unique Images tossed out:', len(noset)
-    print ''
+    print_partition_statistics(meta, classes, dataset_directory)
 
     # Make training directory structure
     subclasses = [s.split()[1] for s in synset]
@@ -211,6 +152,7 @@ def main():
             f.write(prefix)
             f.write(s)
             prefix = "\n"
+    print 'Labels file created: %s' % labels_file
 
     return
 
