@@ -1,5 +1,4 @@
 import time
-import matplotlib.pyplot as plt
 
 def progress(i, num_total, t):
     """Function for printing progress and time elapsed."""
