@@ -43,8 +43,6 @@ meta_file = '/archive/esteva/skindata4/meta.json'
 
 train_dir = '/archive/esteva/skindata4/splits/nine-way/train'
 test_dir = '/archive/esteva/skindata4/splits/nine-way/test'
-train_dir = '/archive/esteva/skindata4/splits/tmp/train'
-test_dir = '/archive/esteva/skindata4/splits/tmp/test'
 labels_file = '/archive/esteva/skindata4/splits/nine-way/labels.txt'
 
 skin_prob = 0.4

@@ -1,2 +1,3 @@
 *.pyc
 brett_*
+tmp/
