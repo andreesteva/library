@@ -38,6 +38,7 @@ from lib.taxonomy.io import *
 
 import scipy.sparse as sp
 
+# User settings
 dataset_directory = '/archive/esteva/skindata4/images/'
 meta_file = '/archive/esteva/skindata4/meta.json'
 

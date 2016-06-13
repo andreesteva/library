@@ -1,4 +1,4 @@
 *.pyc
 brett_*
 tmp/
-*.ipynb-checkpoints/
+*.ipynb_checkpoints/
