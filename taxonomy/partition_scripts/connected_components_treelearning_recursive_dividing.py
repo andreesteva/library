@@ -30,12 +30,14 @@ import numpy as np
 import lib
 from lib.taxonomy.utils import SynonymsList
 from lib.notebooks.vis_utils import tic, toc
-from lib.taxonomy.loading import getEntryValues, gatherSynset, gatherPathsAndLabels, rootNode, rootNodeClasses, setEntries
-from lib.taxonomy.loading import imageExists
+from lib.taxonomy.loading import getEntryValues, gatherSynset, gatherPathsAndLabels, rootNode, rootNodeClasses
+from lib.taxonomy.loading import setEntries, getEntries
+from lib.taxonomy.loading import imageExists, Field2meta
 from lib.taxonomy.loading import TRAINING_SET, TESTING_SET, NO_SET, VALIDATION_SET
 from lib.taxonomy.graph_structure import Taxonomy, recursive_division
-from lib.taxonomy.edge_extraction import *
-from lib.taxonomy.io import *
+from lib.taxonomy.edge_extraction import partition_connected_components
+from lib.taxonomy.io import generate_symlinks, make_directory_structure, create_symlinks
+from lib.taxonomy.io import print_partition_statistics
 
 import scipy.sparse as sp
 
@@ -97,13 +99,49 @@ def main():
     meta_train = getEntries(meta, 'set_identifier', TRAINING_SET)
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
 
+    # Reassign to the training set new labels based on a recursive dividing treelearning partition.
     taxonomy = Taxonomy(meta_train)
-    print 'Applying TreeLearning: Recursive Dividing with N=%d' % N
-    new_classes = recursive_division(taxonomy.top_node, N)
-    for i, new_class in enumerate(new_classes):
+    new_classes, new_names = recursive_division(taxonomy.top_node, N)
+    sort_indices = np.argsort(new_names)
+    new_classes = [new_classes[i] for i in sort_indices]
+    new_names = [new_names[i] for i in sort_indices]
+    for i, (new_class, new_name) in enumerate(zip(new_classes, new_names)):
+        new_name = new_name.strip('/').replace('/', '_')
         for entry in new_class:
             entry['label'] = i
-    synset = gatherSynset(meta_train)
+            entry['label_name'] = new_name
+    print 'Applying TreeLearning: Recursive Dividing with N=%d' % N
+
+    def collectSynset(meta_train):
+        """Returns the synset and checks that it is sorted.
+
+        Args:
+            meta_train (list): list of dicts in skindata format. Must contain field 'label' and 'label_name'
+
+        Returns
+            Sorted list of class names in the format [label_name] [label].
+        """
+        synset = []
+        for m in meta_train:
+            synset.append([m['label_name'], m['label']])
+        synset = {tuple(s) for s in synset}
+        synset = [list(s) for s in synset]
+        synset.sort(key=lambda x: x[0])
+        synset = [[str(ss) for ss in s] for s in synset]
+        synset = [" ".join(s) for s in synset]
+
+        # run sort checks
+        ss = np.sort(synset)
+        for i,j in zip(ss, synset):
+            assert i == j
+
+        for i, j in zip([s.split()[1] for s in ss], [s.split()[1] for s in synset]):
+            assert i == j
+
+        return synset
+
+
+    synset = collectSynset(meta_train)
 
     print 'Size of meta_train %d' % len(meta_train)
     print 'Size of meta_test %d' % len(meta_test)
@@ -137,20 +175,18 @@ def main():
 
     print_partition_statistics(meta, classes, dataset_directory)
 
-    # Make testing directory structure
-    subclasses = np.unique([s.split()[1] for s in synset])
+    # Make testing directory structure - rootnode classes
+    subclasses = np.unique([s.split()[0].split('_')[0] for s in synset])
     make_directory_structure(test_dir, subclasses)
     syms_test = generate_symlinks(testset, test_dir, subclasses)
     create_symlinks(syms_test)
 
-    # Make training directory structure
-#   subclasses = ['_'.join(s.split()[0:2]) for s in synset]
-    subclasses = ['_'.join(s.split()[1::-1]) for s in synset]
+
+    # Make training directory structure - taxonomy training classes
+    subclasses = np.unique([s.replace(' ', '_') for s in synset])
     make_directory_structure(train_dir, subclasses)
     syms_train = generate_symlinks(trainset, train_dir, subclasses)
     create_symlinks(syms_train)
-
-
 
     print 'Directory created: %s' % train_dir
     print 'Directory created: %s' % test_dir

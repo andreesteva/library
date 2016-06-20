@@ -7,12 +7,12 @@ import os
 import os.path as osp
 import glob
 
-
 def finditem(obj, key):
     """Recurses a dictionary obj for all keys matching 'key', and returns the items in a list.
     If 'key' is a list, it does so recursively.
     """
     _found = []
+
     def _finditem(obj, key):
         if key in obj or unicode(key) in obj:
             _found.append(obj[key])
@@ -32,6 +32,52 @@ def finditem(obj, key):
         if key[0] in obj or unicode(key[0]) in obj:
             item = _recursive_get(obj, key)
             _found.append(item)
+
+        for k, v in obj.items():
+            if isinstance(v, dict):
+                _finditem_hierarchy(v, key)
+
+
+    if isinstance(key, list):
+        _finditem_hierarchy(obj, key)
+    else:
+        _finditem(obj, key)
+
+    return _found
+
+def finditemPartial(obj, key):
+    """Recurses a dictionary obj for all keys that contain substring 'key', and returns the items in a list.
+    If 'key' is a list, it does so recursively.
+    """
+    _found = []
+
+    def _contains(obj, key):
+        for k in obj.keys():
+            if key in k or unicode(key) in k:
+                return True
+        return False
+
+    def _finditem(obj, key):
+        for k in obj.keys():
+            if key in k or unicode(key) in k:
+                _found.append({k : obj[k]})
+        for k, v in obj.items():
+            if isinstance(v,dict):
+                _finditem(v, key)
+
+
+    def _recursive_get(obj, keys):
+        if len(keys) == 1:
+            return {key[0] : obj[keys[0]]}
+        return _recursive_get(obj[keys[0]], keys[1:])
+
+
+    def _finditem_hierarchy(obj, key):
+        # look for the first one
+        for k in obj.keys():
+            if key in k or unicode(key) in k:
+                item = _recursive_get(obj, key)
+                _found.append(item)
 
         for k, v in obj.items():
             if isinstance(v, dict):

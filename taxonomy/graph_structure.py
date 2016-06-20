@@ -40,27 +40,35 @@ def recursive_division(vertex, N):
     Args:
         vertex (Vertex instance): the top node at which to begin parsing.
         N (int): If a node and its descendants have more than N images, we split it.
+        return_names: bool, if True, returns the node-names of each node that becomes a class.
 
     Returns:
-        A list of lists of metadata entries. Each list is a newly defined class for training.
+        1) A list of lists of metadata entries. Each list is a newly defined class for training.
+        2) A list of each node-name that was taken as a class.
     """
     if vertex.N <= N:
-        return [vertex.collectMetaFromSelfAndDescendants()]
+        return [vertex.collectMetaFromSelfAndDescendants()], [vertex.name]
     else:
         new_classes = []
+        new_names = []
         if vertex.meta:
             new_classes.append(vertex.meta)
+            new_names.append(vertex.name)
 
         for child in vertex.children:
-            division = recursive_division(child, N)
+            division, division_names = recursive_division(child, N)
             new_classes.extend(division)
+            new_names.extend(division_names)
         assert isinstance(new_classes, list)
 
         for new_class in new_classes:
             for element in new_class:
                 assert(isinstance(element, dict))
 
-        return new_classes
+#       for new_name in new_names:
+#           assert(isinstance(new_name, str))
+
+        return new_classes, new_names
 
 
 class Vertex:
