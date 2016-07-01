@@ -11,12 +11,12 @@ import shutil
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('data_dir',
-                           '/archive/esteva/skindata4/splits/nine-way/train',
+                           '/ssd/esteva/skindata4/splits/nine-way/train',
                            """Path to the data training directory."""
                            """Must contain subfolders of symlinks to images representing classes and data points."""
                            )
 tf.app.flags.DEFINE_string('labels_file',
-                           '/archive/esteva/skindata4/splits/nine-way/labels.txt',
+                           '/ssd/esteva/skindata4/splits/nine-way/labels.txt',
                            """Path to the labels file containing the classes."""
                            )
 tf.app.flags.DEFINE_string('mapping_file',

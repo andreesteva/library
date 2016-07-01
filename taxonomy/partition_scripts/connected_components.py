@@ -78,7 +78,7 @@ def main():
 
     # Keep isic
     isic = getEntries(meta, 'database', 'isic')
-    isic = [i for i in isic if 'label' in i]
+    isic = [i for i in isic if 'label' in i and i['label'] in ['benign', 'malignant']]
 
     # Keep meta with desired skin probs and tax path scores
     meta = [m for m in meta if 'tax_path_score' in m and m['tax_path_score'] >= tax_path_score]

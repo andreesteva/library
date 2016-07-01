@@ -41,17 +41,26 @@ from lib.taxonomy.io import print_partition_statistics
 
 import scipy.sparse as sp
 
-dataset_directory = '/archive/esteva/skindata4/images/'
-meta_file = '/archive/esteva/skindata4/meta.json'
+dataset_directory = '/ssd/esteva/skindata4/images/'
+meta_file = '/ssd/esteva/skindata4/meta.json'
 
-train_dir = '/archive/esteva/skindata4/splits/recursive_dividing_N=1000/train'
-test_dir = '/archive/esteva/skindata4/splits/recursive_dividing_N=1000/test'
-labels_file = '/archive/esteva/skindata4/splits/recursive_dividing_N=1000/labels.txt'
+train_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/train'
+test_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/test'
+labels_file = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/labels.txt'
 
 skin_prob = 0.4
 tax_path_score = 0.8
 N=1000
 
+curated_test_file = '/ssd/esteva/skindata4/test_sets/validation_set.txt'
+
+# Files with entries of the form [path/to/image] [label]
+# All basenames listed in excluded_datasets will be ommitted from train/val
+excluded_datasets = [
+        '/ssd/esteva/skindata4/test_sets/dermoscopy_test.txt',
+        '/ssd/esteva/skindata4/test_sets/epidermal_test.txt',
+        '/ssd/esteva/skindata4/test_sets/melanocytic_test.txt'
+        ]
 
 def main():
 
@@ -70,10 +79,15 @@ def main():
     # Connected components partition assigns one of TRAINING_SET or TESTING_SET to field 'set_identifier'
     partition_connected_components(meta)
 
+    # Keep isic
+    isic = getEntries(meta, 'database', 'isic')
+    isic = [i for i in isic if 'label' in i]
+
     # Keep meta with desired skin probs and tax path scores
     meta = [m for m in meta if 'tax_path_score' in m and m['tax_path_score'] >= tax_path_score]
     meta = [m for m in meta if m['tax_path']]
     meta = [m for m in meta if 'skin_prob' in m and m['skin_prob'] >= skin_prob]
+    meta.extend(isic)
     meta = [m for m in meta if m['set_identifier'] in [TRAINING_SET, TESTING_SET]]
 
     # Fix the naming convention issues of the top 9 categories (to dermal-tumor-benign, etc.)
@@ -147,7 +161,6 @@ def main():
     print 'Size of meta_test %d' % len(meta_test)
 
     # Keep only the test set entries that have passed manual curation
-    curated_test_file = '/archive/esteva/skindata4/splits/test_curated.txt'
     print 'Keeping test set images that have been manually curated.',
     print 'Using curated test file: %s' % curated_test_file
     curated_test = [line.strip() for line in
@@ -163,6 +176,15 @@ def main():
     for m in meta_test:
         if 'cc_keep' not in m:
             m['set_identifier'] = NO_SET
+
+    # Exclude all specified datasets
+    for exclusion_file in excluded_datasets:
+        filenames = [os.path.basename(line.strip().split()[0]) for line in open(exclusion_file).readlines()]
+
+        for fn in filenames:
+            ms = filename2meta(fn)
+            for m in ms:
+                m['set_identifier'] = NO_SET
 
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
     print len(meta_test)
