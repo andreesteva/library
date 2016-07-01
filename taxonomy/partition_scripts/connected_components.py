@@ -32,23 +32,32 @@ from lib.taxonomy.utils import SynonymsList
 from lib.notebooks.vis_utils import tic, toc
 from lib.taxonomy.loading import getEntryValues, gatherSynset, gatherPathsAndLabels, rootNode, rootNodeClasses, setEntries
 from lib.taxonomy.loading import imageExists
-from lib.taxonomy.loading import TRAINING_SET, TESTING_SET, NO_SET, VALIDATION_SET
+from lib.taxonomy.loading import TRAINING_SET, TESTING_SET, NO_SET
 from lib.taxonomy.edge_extraction import *
 from lib.taxonomy.io import *
 
 import scipy.sparse as sp
 
 # User settings
-dataset_directory = '/archive/esteva/skindata4/images/'
-meta_file = '/archive/esteva/skindata4/meta.json'
+dataset_directory = '/ssd/esteva/skindata4/images/'
+meta_file = '/ssd/esteva/skindata4/meta.json'
 
-train_dir = '/archive/esteva/skindata4/splits/nine-way/train'
-test_dir = '/archive/esteva/skindata4/splits/nine-way/test'
-labels_file = '/archive/esteva/skindata4/splits/nine-way/labels.txt'
+train_dir = '/ssd/esteva/skindata4/splits/nine-way/train'
+test_dir = '/ssd/esteva/skindata4/splits/nine-way/val'
+labels_file = '/ssd/esteva/skindata4/splits/nine-way/labels.txt'
 
 skin_prob = 0.4
 tax_path_score = 0.8
 
+curated_test_file = '/ssd/esteva/skindata4/test_sets/validation_set.txt'
+
+# Files with entries of the form [path/to/image] [label]
+# All basenames listed in excluded_datasets will be ommitted from train/val
+excluded_datasets = [
+        '/ssd/esteva/skindata4/test_sets/dermoscopy_test.txt',
+        '/ssd/esteva/skindata4/test_sets/epidermal_test.txt',
+        '/ssd/esteva/skindata4/test_sets/melanocytic_test.txt'
+        ]
 
 def main():
 
@@ -103,7 +112,6 @@ def main():
     print 'Size of meta_test %d' % len(meta_test)
 
     # Keep only the test set entries that have passed manual curation
-    curated_test_file = '/archive/esteva/skindata4/splits/test_curated.txt'
     print 'Keeping test set images that have been manually curated.',
     print 'Using curated test file: %s' % curated_test_file
     curated_test = [line.strip() for line in
@@ -120,12 +128,20 @@ def main():
         if 'cc_keep' not in m:
             m['set_identifier'] = NO_SET
 
+    # Exclude all specified datasets
+    for exclusion_file in excluded_datasets:
+        filenames = [os.path.basename(line.strip().split()[0]) for line in open(exclusion_file).readlines()]
+
+        for fn in filenames:
+            ms = filename2meta(fn)
+            for m in ms:
+                m['set_identifier'] = NO_SET
+
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
     print len(meta_test)
 
     print 'Gathering paths and labels from the metadata'
     trainset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TRAINING_SET))
-    valset = np.unique(gatherPathsAndLabels(meta, dataset_directory, VALIDATION_SET))
     testset = np.unique(gatherPathsAndLabels(meta, dataset_directory, TESTING_SET))
     no_set = np.unique(gatherPathsAndLabels(meta, dataset_directory, NO_SET))
 

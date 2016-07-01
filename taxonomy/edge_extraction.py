@@ -278,10 +278,10 @@ def partition_connected_components(meta):
     This function updates 'set_identifier' fields of meta to be either TRAINING_SET or TESTING_SET
     depending on where they get placed.
     """
-    test_set = '/archive/esteva/skindata4/duplicate_urls_turk2.json'
+    test_set = 'duplicate_urls_turk2.json'
     turk_results = [
-        '/archive/esteva/skindata4/duplicate_urls_turk1.json',
-        '/archive/esteva/skindata4/duplicate_urls_turk2.json',
+        'duplicate_urls_turk1.json',
+        'duplicate_urls_turk2.json',
         ]
 
     def component_is_split(comp):
