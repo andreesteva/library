@@ -30,7 +30,7 @@ import numpy as np
 import lib
 from lib.taxonomy.utils import SynonymsList
 from lib.notebooks.vis_utils import tic, toc
-from lib.taxonomy.loading import getEntryValues, gatherSynset, gatherPathsAndLabels, rootNode, rootNodeClasses, setEntries
+from lib.taxonomy.loading import getEntryValues, gatherSynset, gatherPathsAndLabels, rootNode, rootNodeClasses, setEntries, getEntries
 from lib.taxonomy.loading import imageExists
 from lib.taxonomy.loading import TRAINING_SET, TESTING_SET, NO_SET
 from lib.taxonomy.edge_extraction import *
@@ -76,10 +76,15 @@ def main():
     # Connected components partition assigns one of TRAINING_SET or TESTING_SET to field 'set_identifier'
     partition_connected_components(meta)
 
+    # Keep isic
+    isic = getEntries(meta, 'database', 'isic')
+    isic = [i for i in isic if 'label' in i]
+
     # Keep meta with desired skin probs and tax path scores
     meta = [m for m in meta if 'tax_path_score' in m and m['tax_path_score'] >= tax_path_score]
     meta = [m for m in meta if m['tax_path']]
     meta = [m for m in meta if 'skin_prob' in m and m['skin_prob'] >= skin_prob]
+    meta.extend(isic)
     meta = [m for m in meta if m['set_identifier'] in [TRAINING_SET, TESTING_SET]]
 
     # Fix the naming convention issues of the top 9 categories (to dermal-tumor-benign, etc.)
