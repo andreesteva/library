@@ -44,8 +44,8 @@ import scipy.sparse as sp
 dataset_directory = '/ssd/esteva/skindata4/images/'
 meta_file = '/ssd/esteva/skindata4/meta.json'
 
-train_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/train'
-test_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/test'
+train_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/tmp-train'
+test_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/tmp-test'
 labels_file = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/labels.txt'
 
 skin_prob = 0.4
