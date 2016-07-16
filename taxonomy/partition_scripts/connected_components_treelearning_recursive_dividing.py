@@ -41,16 +41,14 @@ from lib.taxonomy.io import print_partition_statistics
 
 import scipy.sparse as sp
 
+
+# User settings - MJOLNIR ----------------------------------
 dataset_directory = '/ssd/esteva/skindata4/images/'
 meta_file = '/ssd/esteva/skindata4/meta.json'
 
-train_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/tmp-train'
-test_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/tmp-test'
+train_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/train'
+test_dir = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/val'
 labels_file = '/ssd/esteva/skindata4/splits/recursive_dividing_N=1000/labels.txt'
-
-skin_prob = 0.4
-tax_path_score = 0.8
-N=1000
 
 curated_test_file = '/ssd/esteva/skindata4/test_sets/validation_set.txt'
 
@@ -61,6 +59,32 @@ excluded_datasets = [
         '/ssd/esteva/skindata4/test_sets/epidermal_test.txt',
         '/ssd/esteva/skindata4/test_sets/melanocytic_test.txt'
         ]
+
+
+# User settings - LEOPARD ----------------------------------
+D = '/media/esteva/ExtraDrive1/ThrunResearch/data/skindata4'
+dataset_directory = os.path.join(D, 'images/')
+meta_file = os.path.join(D, 'meta.json')
+
+train_dir = os.path.join(D, 'splits/recursive_dividing_N=1000/train')
+test_dir = os.path.join(D, 'splits/recursive_dividing_N=1000/eval')
+labels_file = os.path.join(D, 'splits/recursive_dividing_N=1000/labels.txt')
+
+curated_test_file = os.path.join(D, 'test_sets/validation_set.txt')
+
+# Files with entries of the form [path/to/image] [label]
+# All basenames listed in excluded_datasets will be ommitted from train/val
+excluded_datasets = [
+        os.path.join(D, 'test_sets/dermoscopy_test.txt'),
+        os.path.join(D, 'test_sets/epidermal_test.txt'),
+        os.path.join(D, 'test_sets/melanocytic_test.txt')
+        ]
+
+
+skin_prob = 0.4
+tax_path_score = 0.8
+N=1000
+
 
 def main():
 
@@ -178,13 +202,17 @@ def main():
             m['set_identifier'] = NO_SET
 
     # Exclude all specified datasets
+    filename2meta = Field2meta(meta, field='filename')
     for exclusion_file in excluded_datasets:
+        exclusion_count = 0
         filenames = [os.path.basename(line.strip().split()[0]) for line in open(exclusion_file).readlines()]
 
         for fn in filenames:
             ms = filename2meta(fn)
             for m in ms:
                 m['set_identifier'] = NO_SET
+                exclusion_count += 1
+        print 'Excluding %d images listed in dataset %s' % (exclusion_count, exclusion_file)
 
     meta_test = getEntries(meta, 'set_identifier', TESTING_SET)
     print len(meta_test)
