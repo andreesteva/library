@@ -1,7 +1,8 @@
 from sklearn.metrics import auc
 import matplotlib.pyplot as plt
+import numpy as np
 
-def plotSSCurve(sensitivity, specificity, people=[], title="", show_legend=False, textcolor='#4D5B66'):
+def plotSSCurve(sensitivity, specificity, people=[], title="", show_legend=False, textcolor='#4D5B66', plot_results=True):
     """SS curve for Publications.
 
     Args:
@@ -80,6 +81,7 @@ def plotSSCurve(sensitivity, specificity, people=[], title="", show_legend=False
 
         if show_legend:
             plt.legend(loc='lower left', numpoints= 1)
-        plt.show()
+        if plot_results:
+            plt.show()
     return fig, ax
 
