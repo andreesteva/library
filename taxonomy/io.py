@@ -61,6 +61,7 @@ def create_symlinks(symlinks):
     for entry in symlinks:
         src = entry.split()[0]
         dst = entry.split()[1]
+        print 'Linking: %s to %s' % (src, dst)
         os.symlink(src, dst)
 
 

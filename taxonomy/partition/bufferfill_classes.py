@@ -87,8 +87,12 @@ def rename_file(filename):
     """Appends a '_' to a filename until the new filename no longer exists."""
     if not os.path.exists(filename):
         return filename
+    elif filename[-1].isdigit():
+        prev = int(filename.split('_')[-1])
+        filename = '_'.join(filename.split('_')[:-1]) + '_' + str(prev + 1)
+        return rename_file(filename)
     else:
-        filename = filename + '_'
+        filename = filename + '_1'
         return rename_file(filename)
 
 
