@@ -4,7 +4,7 @@ import numpy as np
 import unittest
 
 
-def mergeProbabilities(probabilities, mapping):
+def mergeProbabilities(probabilities, mapping, ignore_classes=[]):
     """Merges N x K probabilities matrix into N x L, with L <= K, using mapping.
 
     Args:
@@ -13,6 +13,8 @@ def mergeProbabilities(probabilities, mapping):
             [merge-class-name-0] [softmax-output-class-0]
             [merge-class-name-0] [softmax-output-class-1]
             [merge-class-name-1] [softmax-output-class-2]
+        ignore_classes: list of classnames to ignore, by zeroing out their probabilities
+            prior to renormalization.
 
     Returns
         N x L numpy.array of merged probabilities.
@@ -24,7 +26,10 @@ def mergeProbabilities(probabilities, mapping):
 
     for i, mc in enumerate(merge_classes):
         theClasses = np.array([m.split()[0] == mc for m in mapping])
-        merge_probs[:, i] = np.sum(probabilities[:, theClasses], axis=1)
+        if mc in ignore_classes:
+            merge_probs[:, i] = 0.0
+        else:
+            merge_probs[:, i] = np.sum(probabilities[:, theClasses], axis=1)
     merge_probs /= np.sum(merge_probs, axis=1).reshape((-1,1))
     return merge_probs
 
