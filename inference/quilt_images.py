@@ -30,6 +30,7 @@ parser.add_argument('--train_features')
 parser.add_argument('--val_filenames')
 parser.add_argument('--val_features')
 
+args = parser.parse_args()
 
 def readtxt(fn):
     return np.array([line.strip() for line in open(fn).readlines()])
@@ -40,7 +41,7 @@ def readmat(fn):
 
 
 def addFullImagePath(basename):
-    return os.path.join(args.IMAGES_DIR, basename)
+    return os.path.join(args.images_dir, basename)
 
 
 def keep_unique_filenames(filenames, mat):
@@ -84,17 +85,17 @@ def save_quilt(quilt_paths, M=50):
         print '\rQuilting %d/%d' % (i+M, N),
         quilt = retrieval.quiltTheImages(quilt_paths[i:i+M])
         ext = args.save_name.split('.')[-1]
-        fn = "".join(SAVE_NAME.split('.')[:-1]) +'-' + str(i+M) + '.' + ext
+        fn = ".".join(args.save_name.split('.')[:-1]) +'-' + str(i+M) + '.' + ext
         print fn
         quilt.save(fn)
 
 
 def main():
 
-    train_filenames = parser.train_filenames
-    train_features = parser.train_features
-    val_filenames = parser.val_filenames
-    val_features = parser.val_features
+    train_filenames = args.train_filenames
+    train_features = args.train_features
+    val_filenames = args.val_filenames
+    val_features = args.val_features
 
     train_filenames = readtxt(train_filenames)
     train_features = readmat(train_features)
@@ -111,14 +112,14 @@ def main():
 
     # Find nearest neighbors and sort distance matrix and val_filenames by
     # first nearest neighbor distance
-    print 'Calculating distance matrix'
+    print 'Calculating distance matrix',
     t = time.time()
     dist_mat = euclidean_distances(val_features, train_features)
     dist_mat, val_filenames = NN_sort(dist_mat, val_filenames)
     print 'Elapsed Time: %0.3f' % (time.time() - t)
 
     t = time.time()
-    print 'Calculating Index matrix'
+    print 'Calculating Index matrix',
     index_mat = np.argsort(dist_mat, axis=1)
     print 'Elapsed Time: %0.3f' % (time.time() - t)
 
