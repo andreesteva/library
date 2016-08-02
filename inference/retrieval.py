@@ -53,12 +53,13 @@ def quiltTheImages(image_paths, patch_size=200, inscribedText=None):
         for j, (path, text) in enumerate(zip(list_, tlist)):
             im = Image.open(path).resize((patch_size, patch_size))
             draw = ImageDraw.Draw(im)
-            font = ImageFont.truetype('arial.ttf', 35)
+#           font = ImageFont.truetype('arial.ttf', 35)
             if im.mode == 'RGB':
                 textcolor = (255,0,0)
             else:
                 textcolor = 255
-            draw.text((10,10), text, textcolor, font=font)
+#           draw.text((10,10), text, textcolor, font=font)
+            draw.text((10,10), text, textcolor)
             quilt.paste(im, (j * patch_size, i * patch_size))
     return quilt
 
