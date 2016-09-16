@@ -84,7 +84,15 @@ def bufferFillPerGroup(entries, groups=None):
 
 # TODO: This function is hella slow. Renaming of files should probably be embedded into the group iterator.
 def rename_file(filename):
-    """Appends a '_' to a filename until the new filename no longer exists."""
+    """Will rename a file from filename.jpg to filename-1.jpg.
+
+    Args:
+        filename (str): the filename
+
+    Returns:
+        Altered filename. If filename-1.jpg exists, it returns filename-2.jpg, etc...
+
+    """
     if not os.path.exists(filename):
         return filename
     elif filename[-1].isdigit():
