@@ -22,7 +22,7 @@ def retrieve(comparison_features, query_features, N):
 
         Returns:
             The indices into comparison_features of the N nearest neighbors, and
-            an N x F array of N nearest neighbors (sorted), of F features.
+            their distances from the query_features.
     """
     dists = np.linalg.norm(comparison_features - query_features,axis=1)
     topN = np.argsort(dists)[:N]
