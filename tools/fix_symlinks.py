@@ -2,6 +2,11 @@
 
 /media/esteva/ExtraDrive1/ThrunResearch/data/skindata4/images/
 
+Example Usage
+D="/tmp/broken_links"
+python /media/esteva/ExtraDrive1/ThrunResearch/tensorflow_master/lib/tools/fix_symlinks.py \
+        --dir=${D}
+
 """
 
 import os
