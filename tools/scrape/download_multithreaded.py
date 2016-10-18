@@ -1,4 +1,4 @@
-"""Script to download the images from dog_urls.txt into images/"""
+"""Example script to download images in a multithreaded way images from dog_urls.txt into images/"""
 
 import os
 import urllib
